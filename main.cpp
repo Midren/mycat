@@ -91,6 +91,6 @@ int main(int argc, char **argv) {
     }
     auto fds = open_files(input_files);
     for (auto fd : fds)
-        fd_to_stdout(fd, true);
+        fd_to_stdout(fd, vm.count("show-all"));
     return 0;
 }
