@@ -1,7 +1,6 @@
 #include <iostream>
 #include <boost/program_options.hpp>
 #include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
 #include <string>
 #include <unistd.h>
@@ -9,14 +8,8 @@
 
 const size_t BUFFER_SIZE = 4096;
 
-
-int fd_to_stdout(const std::string &file_name, bool A) {
-    int fd = open(file_name.c_str(), O_RDONLY);
+int fd_to_stdout(int fd, bool A) {
     ssize_t read_n;
-    if (fd == -1) {
-        write(STDERR_FILENO, "Can`t open file\n", 16);
-        return -1;
-    }
     char buf[BUFFER_SIZE + 1];
     while ((read_n = read(fd, buf, BUFFER_SIZE)) > 0) {
         if (A) {
@@ -68,19 +61,36 @@ po::variables_map parse_args(int argc, char **argv) {
 
     if (vm.count("help")) {
         allowed.print(std::cout);
-        exit(1);
+        exit(0);
     }
 
     return vm;
 }
 
+std::vector<int> open_files(std::vector<std::string> &files) {
+    std::vector<int> fds;
+    for (auto &file_name : files) {
+        int fd = open(file_name.c_str(), O_RDONLY);
+        if (fd == -1) {
+            perror("Cannot open file");
+        }
+        fds.push_back(fd);
+    }
+    return fds;
+}
+
 int main(int argc, char **argv) {
     auto vm = parse_args(argc, argv);
+    std::vector<std::string> input_files;
     if (vm.count("input-file")) {
-        std::vector<std::string> input_files = vm["input-file"].as<std::vector<std::string> >();
+        input_files = vm["input-file"].as<std::vector<std::string> >();
     } else {
-
+        errno = EINVAL;
+        perror("No input files");
+        exit(2);
     }
-    fd_to_stdout("../main.cpp", true);
+    auto fds = open_files(input_files);
+    for (auto fd : fds)
+        fd_to_stdout(fd, true);
     return 0;
 }
