@@ -10,7 +10,6 @@
 const size_t BUFFER_SIZE = 4096;
 
 
-
 int fd_to_stdout(const std::string &file_name, bool A) {
     int fd = open(file_name.c_str(), O_RDONLY);
     ssize_t read_n;
@@ -21,27 +20,19 @@ int fd_to_stdout(const std::string &file_name, bool A) {
     char buf[BUFFER_SIZE + 1];
     while ((read_n = read(fd, buf, BUFFER_SIZE)) > 0) {
         if (A) {
-            size_t st = 0, cur_buf_len = 0;
-            for(size_t i = 0; i < BUFFER_SIZE; i++) {
-                if(isprint(buf[i]) || isspace(buf[i])) {
-                    cur_buf_len++;
-                    continue;
-                }
-                else{
-                    if(st != i){
-                        write(STDOUT_FILENO, buf + st, cur_buf_len);
-                        cur_buf_len = 0;
-                    } else{
-                        char c[2];
-                        int x = sprintf(c, "%x", buf[i]);
-                        write(STDOUT_FILENO, c, x);
-
-                    }
+            size_t st = 0;
+            for (size_t i = 0; i < read_n; i++) {
+                if (!isprint(buf[i]) && !isspace(buf[i])) {
+                    if (st != i)
+                        write(STDOUT_FILENO, buf + st, i - st);
+                    char c[5];
+                    sprintf(c, "\\x%02x", static_cast<unsigned char>(buf[i]));
+                    write(STDOUT_FILENO, c, 4);
                     st = i + 1;
                 }
             }
-            if(cur_buf_len)
-                write(STDOUT_FILENO, buf, cur_buf_len);
+            if (read_n - st)
+                write(STDOUT_FILENO, buf, read_n - st);
         } else {
             if (write(STDOUT_FILENO, buf, read_n) != read_n) {
                 write(STDERR_FILENO, "Couldn`t write the whole buffer", strlen("Couldn`t write the whole buffer"));
@@ -90,5 +81,6 @@ int main(int argc, char **argv) {
     } else {
 
     }
+    fd_to_stdout("../main.cpp", true);
     return 0;
 }
