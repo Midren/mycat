@@ -8,6 +8,25 @@
 
 const size_t BUFFER_SIZE = 4096;
 
+int stdout_write(const char* buffer, ssize_t size){
+    ssize_t written_bytes = 0;
+    while(written_bytes < size){
+        ssize_t written_chunk = write(STDOUT_FILENO, buffer, size);
+        if(written_chunk == -1){
+            if(errno == EINTR)
+                continue;
+            else{
+                perror("Can`t write to file");
+                exit(3);
+            }
+        }
+        else{
+            written_bytes += written_chunk;
+        }
+    }
+    return 0;
+}
+
 int fd_to_stdout(int fd, bool A) {
     ssize_t read_n;
     char buf[BUFFER_SIZE + 1];
@@ -17,20 +36,17 @@ int fd_to_stdout(int fd, bool A) {
             for (size_t i = 0; i < read_n; i++) {
                 if (!isprint(buf[i]) && !isspace(buf[i])) {
                     if (st != i)
-                        write(STDOUT_FILENO, buf + st, i - st);
+                        stdout_write(buf + st, i - st);
                     char c[5];
                     sprintf(c, "\\x%02x", static_cast<unsigned char>(buf[i]));
-                    write(STDOUT_FILENO, c, 4);
+                    stdout_write(c, 4);
                     st = i + 1;
                 }
             }
             if (read_n - st)
-                write(STDOUT_FILENO, buf, read_n - st);
+                stdout_write(buf, read_n - st);
         } else {
-            if (write(STDOUT_FILENO, buf, read_n) != read_n) {
-                write(STDERR_FILENO, "Couldn`t write the whole buffer", strlen("Couldn`t write the whole buffer"));
-                return -1;
-            }
+            stdout_write(buf, read_n);
         }
     }
     return 0;
