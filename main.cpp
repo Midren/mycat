@@ -7,46 +7,60 @@
 #include <cctype>
 
 const size_t BUFFER_SIZE = 4096;
+char buf[BUFFER_SIZE + 1];
+char buf_hex[BUFFER_SIZE * 4 + 1];
 
-int stdout_write(const char* buffer, ssize_t size){
+int stdout_write(const char *buffer, ssize_t size) {
     ssize_t written_bytes = 0;
-    while(written_bytes < size){
+    while (written_bytes < size) {
         ssize_t written_chunk = write(STDOUT_FILENO, buffer, size);
-        if(written_chunk == -1){
-            if(errno == EINTR)
+        if (written_chunk == -1) {
+            if (errno == EINTR)
                 continue;
-            else{
+            else {
                 perror("Can`t write to file");
                 exit(3);
             }
-        }
-        else{
+        } else {
             written_bytes += written_chunk;
         }
     }
     return 0;
 }
 
+int file_read(int fd, char *buf, size_t sz) {
+    while (true) {
+        ssize_t read_n = read(fd, buf, BUFFER_SIZE);
+        if (read_n == -1) {
+            if (errno == EINTR) {
+                continue;
+            } else {
+                perror("Cannot read file");
+                exit(4);
+            }
+        } else {
+            return read_n;
+        }
+    }
+}
+
 int fd_to_stdout(int fd, bool A) {
     ssize_t read_n;
-    char buf[BUFFER_SIZE + 1];
-    while ((read_n = read(fd, buf, BUFFER_SIZE)) > 0) {
+    while ((read_n = file_read(fd, buf, BUFFER_SIZE)) > 0) {
         if (A) {
-            size_t st = 0;
+            size_t j = 0;
             for (size_t i = 0; i < read_n; i++) {
                 if (!isprint(buf[i]) && !isspace(buf[i])) {
-                    if (st != i)
-                        stdout_write(buf + st, i - st);
                     char c[5];
                     sprintf(c, "\\x%02x", static_cast<unsigned char>(buf[i]));
-                    stdout_write(c, 4);
-                    st = i + 1;
+                    memcpy(buf_hex + j, c, 4);
+                    j += 4;
+                } else {
+                    buf_hex[j] = buf[i];
+                    j += 1;
                 }
             }
-            if (read_n - st)
-                stdout_write(buf, read_n - st);
-        } else {
-            stdout_write(buf, read_n);
+            stdout_write(buf_hex, j);
         }
     }
     return 0;
