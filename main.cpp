@@ -10,17 +10,27 @@ const size_t BUFFER_SIZE = 4096;
 char buf[BUFFER_SIZE + 1];
 char buf_hex[BUFFER_SIZE * 4 + 1];
 
+//#define USING_LIB_C
+#ifdef USING_LIB_C
+#define FILE_DESC FILE*
+#else
+#define FILE_DESC int
+#endif
+
 int stdout_write(const char *buffer, ssize_t size) {
     ssize_t written_bytes = 0;
     while (written_bytes < size) {
+#ifdef USING_LIB_C
+        ssize_t written_chunk = fwrite(buffer, sizeof(char), size, stdout);
+        if (ferror(stdout)) {
+#else
         ssize_t written_chunk = write(STDOUT_FILENO, buffer, size);
         if (written_chunk == -1) {
             if (errno == EINTR)
                 continue;
-            else {
-                perror("Can`t write to file");
-                exit(3);
-            }
+#endif
+            perror("Can`t write to stdout");
+            exit(3);
         } else {
             written_bytes += written_chunk;
         }
@@ -28,23 +38,27 @@ int stdout_write(const char *buffer, ssize_t size) {
     return 0;
 }
 
-int file_read(int fd, char *buf, size_t sz) {
+int file_read(FILE_DESC fd, char *buf, size_t sz) {
     while (true) {
-        ssize_t read_n = read(fd, buf, BUFFER_SIZE);
-        if (read_n == -1) {
-            if (errno == EINTR) {
-                continue;
-            } else {
-                perror("Cannot read file");
-                exit(4);
-            }
+#ifdef USING_LIB_C
+        size_t read_n = fread(buf, sizeof(char), BUFFER_SIZE, fd);
+        if (ferror(fd) && !feof(fd)) {
+#else
+            ssize_t read_n = read(fd, buf, BUFFER_SIZE);
+            if (read_n == -1) {
+                if (errno == EINTR)
+                    continue;
+#endif
+            perror("Cannot read file");
+            exit(4);
         } else {
             return read_n;
         }
     }
+
 }
 
-int fd_to_stdout(int fd, bool A) {
+int fd_to_stdout(FILE_DESC fd, bool A) {
     ssize_t read_n;
     while ((read_n = file_read(fd, buf, BUFFER_SIZE)) > 0) {
         if (A) {
@@ -61,6 +75,8 @@ int fd_to_stdout(int fd, bool A) {
                 }
             }
             stdout_write(buf_hex, j);
+        } else {
+            stdout_write(buf, read_n);
         }
     }
     return 0;
@@ -97,6 +113,22 @@ po::variables_map parse_args(int argc, char **argv) {
     return vm;
 }
 
+#ifdef USING_LIB_C
+
+std::vector<FILE *> open_files(std::vector<std::string> &files) {
+    std::vector<FILE *> fds;
+    for (auto &file_name : files) {
+        auto fd = fopen(file_name.c_str(), "r");
+        if (fd == nullptr) {
+            perror("Cannot open file");
+            exit(1);
+        }
+        fds.push_back(fd);
+    }
+    return fds;
+}
+
+#else
 std::vector<int> open_files(std::vector<std::string> &files) {
     std::vector<int> fds;
     for (auto &file_name : files) {
@@ -108,6 +140,7 @@ std::vector<int> open_files(std::vector<std::string> &files) {
     }
     return fds;
 }
+#endif
 
 int main(int argc, char **argv) {
     auto vm = parse_args(argc, argv);
@@ -122,7 +155,11 @@ int main(int argc, char **argv) {
     auto fds = open_files(input_files);
     for (auto fd : fds) {
         fd_to_stdout(fd, vm.count("show-all"));
+#ifdef USING_LIB_C
+        fclose(fd);
+#else
         close(fd);
+#endif
     }
     return 0;
 }
