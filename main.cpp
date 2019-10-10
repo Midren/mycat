@@ -12,8 +12,8 @@
 #endif
 
 #ifndef _WIN32
-typedef BYTE char
-typedef DWORD size_t
+typedef char BYTE;
+typedef size_t DWORD;
 #endif
 const size_t BUFFER_SIZE = 4096;
 BYTE buf[BUFFER_SIZE + 1];
@@ -41,9 +41,9 @@ int stdout_write(const BYTE *buffer, DWORD size) {
             if (errno == EINTR)
                 continue;
 #elif _WIN32
-        DWORD written_chunk;
-        HANDLE hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
-        if (!WriteFile(hStdOut, buffer, size, &written_chunk, nullptr)) {
+            DWORD written_chunk;
+            HANDLE hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
+            if (!WriteFile(hStdOut, buffer, size, &written_chunk, nullptr)) {
 #endif
             perror("Can`t write to stdout");
             exit(3);
@@ -66,8 +66,8 @@ int file_read(FILE_DESC fd, BYTE *buf, DWORD sz) {
             if (errno == EINTR)
                 continue;
 #elif _WIN32
-        DWORD read_n;
-        if (!ReadFile(fd, buf, BUFFER_SIZE, &read_n, NULL)) {
+            DWORD read_n;
+            if (!ReadFile(fd, buf, BUFFER_SIZE, &read_n, NULL)) {
 #endif
             perror("Cannot read file");
             exit(4);
@@ -144,9 +144,9 @@ std::vector<FILE_DESC> open_files(std::vector<std::string> &files) {
         int fd = open(file_name.c_str(), O_RDONLY);
         if (fd == -1) {
 #elif _WIN32
-        auto fd = CreateFile(file_name.c_str(), GENERIC_READ, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_READONLY,
-                             nullptr);
-        if (fd == INVALID_HANDLE_VALUE) {
+            auto fd = CreateFile(file_name.c_str(), GENERIC_READ, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_READONLY,
+                                 nullptr);
+            if (fd == INVALID_HANDLE_VALUE) {
 #endif
             perror("Cannot open file");
         }
