@@ -120,7 +120,9 @@ int main(int argc, char **argv) {
         exit(2);
     }
     auto fds = open_files(input_files);
-    for (auto fd : fds)
+    for (auto fd : fds) {
         fd_to_stdout(fd, vm.count("show-all"));
+        close(fd);
+    }
     return 0;
 }
