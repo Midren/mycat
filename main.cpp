@@ -3,8 +3,14 @@
 #include <sys/types.h>
 #include <fcntl.h>
 #include <string>
-#include <unistd.h>
 #include <cctype>
+
+#if defined(__unix__) || defined(__APPLE__) || defined(__MACH__)
+
+#include <unistd.h>
+#include <sys/param.h>
+
+#endif
 
 #ifdef _WIN32
 #include <windows.h>
@@ -21,7 +27,7 @@ BYTE buf_hex[BUFFER_SIZE * 4 + 1];
 
 #if defined(USING_LIB_C)
 #define FILE_DESC FILE*
-#elif defined(__linux__ ) || defined( __APPLE__)
+#elif defined(__linux__ ) || defined( __APPLE__) || defined(__FreeBSD__)
 #define FILE_DESC int
 #elif defined(_WIN32)
 #define FILE_DESC HANDLE
@@ -34,7 +40,7 @@ int stdout_write(const BYTE *buffer, DWORD size) {
 #if defined(USING_LIB_C)
         ssize_t written_chunk = fwrite(buffer, sizeof(char), size, stdout);
         if (ferror(stdout)) {
-#elif defined(__linux__ ) || defined(__APPLE__)
+#elif defined(__linux__ ) || defined( __APPLE__) || defined(__FreeBSD__)
         ssize_t written_chunk = write(STDOUT_FILENO, buffer, static_cast<unsigned int>(size));
         if (written_chunk == -1) {
             if (errno == EINTR)
@@ -59,7 +65,7 @@ int file_read(FILE_DESC fd, BYTE *buf, DWORD sz) {
 #if defined(USING_LIB_C)
         size_t read_n = fread(buf, sizeof(char), BUFFER_SIZE, fd);
         if (ferror(fd) && !feof(fd)) {
-#elif defined(__linux__ ) || defined( __APPLE__)
+#elif defined(__linux__ ) || defined( __APPLE__) || defined(__FreeBSD__)
         ssize_t read_n = read(reinterpret_cast<int>(fd), buf, BUFFER_SIZE);
         if (read_n == -1) {
             if (errno == EINTR)
@@ -139,7 +145,7 @@ std::vector<FILE_DESC> open_files(std::vector<std::string> &files) {
 #if defined(USING_LIB_C)
         auto fd = fopen(file_name.c_str(), "r");
         if (fd == nullptr) {
-#elif defined(__linux__ ) || defined( __APPLE__)
+#elif defined(__linux__ ) || defined( __APPLE__) || defined(__FreeBSD__)
         int fd = open(file_name.c_str(), O_RDONLY);
         if (fd == -1) {
 #elif defined(_WIN32)
@@ -169,7 +175,7 @@ int main(int argc, char **argv) {
         fd_to_stdout(fd, static_cast<bool>(vm.count("show-all")));
 #if defined(USING_LIB_C)
         fclose(fd);
-#elif defined(__linux__ ) || defined( __APPLE__)
+#elif defined(__linux__ ) || defined( __APPLE__) || defined(__FreeBSD__)
         close(fd);
 #elif defined(_WIN32)
         CloseHandle(fd);
