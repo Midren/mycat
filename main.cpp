@@ -19,7 +19,6 @@ const size_t BUFFER_SIZE = 4096;
 BYTE buf[BUFFER_SIZE + 1];
 BYTE buf_hex[BUFFER_SIZE * 4 + 1];
 
-//#define USING_LIB_C
 #ifdef USING_LIB_C
 #define FILE_DESC FILE*
 #elif __linux__
