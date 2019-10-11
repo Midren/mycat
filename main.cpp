@@ -86,7 +86,7 @@ int fd_to_stdout(FILE_DESC fd, bool A) {
             for (size_t i = 0; i < read_n; i++) {
                 if (!isprint(buf[i]) && !isspace(buf[i])) {
                     char c[5];
-                    sprintf(c, "\\x%02x", static_cast<unsigned char>(buf[i]));
+                    sprintf(c, "\\x%02X", static_cast<unsigned char>(buf[i]));
                     memcpy(buf_hex + j, c, 4);
                     j += 4;
                 } else {
