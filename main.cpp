@@ -19,11 +19,11 @@ const size_t BUFFER_SIZE = 4096;
 BYTE buf[BUFFER_SIZE + 1];
 BYTE buf_hex[BUFFER_SIZE * 4 + 1];
 
-#ifdef USING_LIB_C
+#if defined(USING_LIB_C)
 #define FILE_DESC FILE*
-#elif __linux__
+#elif defined(__linux__ ) || defined( __APPLE__)
 #define FILE_DESC int
-#elif _WIN32
+#elif defined(_WIN32)
 #define FILE_DESC HANDLE
 #endif
 
@@ -31,15 +31,15 @@ BYTE buf_hex[BUFFER_SIZE * 4 + 1];
 int stdout_write(const BYTE *buffer, DWORD size) {
     ssize_t written_bytes = 0;
     while (written_bytes < size) {
-#ifdef USING_LIB_C
+#if defined(USING_LIB_C)
         ssize_t written_chunk = fwrite(buffer, sizeof(char), size, stdout);
         if (ferror(stdout)) {
-#elif __linux__
+#elif defined(__linux__ ) || defined(__APPLE__)
         ssize_t written_chunk = write(STDOUT_FILENO, buffer, static_cast<unsigned int>(size));
         if (written_chunk == -1) {
             if (errno == EINTR)
                 continue;
-#elif _WIN32
+#elif defined(_WIN32)
             DWORD written_chunk;
             HANDLE hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
             if (!WriteFile(hStdOut, buffer, size, &written_chunk, nullptr)) {
@@ -56,15 +56,15 @@ int stdout_write(const BYTE *buffer, DWORD size) {
 
 int file_read(FILE_DESC fd, BYTE *buf, DWORD sz) {
     while (true) {
-#ifdef USING_LIB_C
+#if defined(USING_LIB_C)
         size_t read_n = fread(buf, sizeof(char), BUFFER_SIZE, fd);
         if (ferror(fd) && !feof(fd)) {
-#elif __linux__
+#elif defined(__linux__ ) || defined( __APPLE__)
         ssize_t read_n = read(reinterpret_cast<int>(fd), buf, BUFFER_SIZE);
         if (read_n == -1) {
             if (errno == EINTR)
                 continue;
-#elif _WIN32
+#elif defined(_WIN32)
             DWORD read_n;
             if (!ReadFile(fd, buf, BUFFER_SIZE, &read_n, NULL)) {
 #endif
@@ -136,13 +136,13 @@ po::variables_map parse_args(int argc, char **argv) {
 std::vector<FILE_DESC> open_files(std::vector<std::string> &files) {
     std::vector<FILE_DESC> fds;
     for (auto &file_name : files) {
-#ifdef USING_LIB_C
+#if defined(USING_LIB_C)
         auto fd = fopen(file_name.c_str(), "r");
         if (fd == nullptr) {
-#elif __linux__
+#elif defined(__linux__ ) || defined( __APPLE__)
         int fd = open(file_name.c_str(), O_RDONLY);
         if (fd == -1) {
-#elif _WIN32
+#elif defined(_WIN32)
             auto fd = CreateFile(file_name.c_str(), GENERIC_READ, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_READONLY,
                                  nullptr);
             if (fd == INVALID_HANDLE_VALUE) {
@@ -167,11 +167,11 @@ int main(int argc, char **argv) {
     auto fds = open_files(input_files);
     for (auto fd : fds) {
         fd_to_stdout(fd, static_cast<bool>(vm.count("show-all")));
-#ifdef USING_LIB_C
+#if defined(USING_LIB_C)
         fclose(fd);
-#elif __linux__
+#elif defined(__linux__ ) || defined( __APPLE__)
         close(fd);
-#elif _WIN32
+#elif defined(_WIN32)
         CloseHandle(fd);
 #endif
     }
