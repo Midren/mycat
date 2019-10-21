@@ -47,7 +47,7 @@ add_executable(mycat IMPORTED)
 # Import target "mycat" for configuration ""
 set_property(TARGET mycat APPEND PROPERTY IMPORTED_CONFIGURATIONS NOCONFIG)
 set_target_properties(mycat PROPERTIES
-  IMPORTED_LOCATION_NOCONFIG "/home/midren/Documents/ucu/os/myshell/mycat/build/mycat"
+  IMPORTED_LOCATION_NOCONFIG "/home/midren/Documents/ucu/os/myshell/mycat/b/mycat"
   )
 
 # This file does not depend on other imported targets which have
