@@ -8,5 +8,5 @@ add_executable(mycat main.cpp)
 target_link_libraries(mycat ${Boost_LIBRARIES})
 message(${CMAKE_INSTALL_PREFIX})
 
-install (TARGETS mycat EXPORT mycat RUNTIME DESTINATION ${PROJECT_SOURCE_DIR}../bin)
+install (TARGETS mycat EXPORT mycat RUNTIME DESTINATION ${PROJECT_SOURCE_DIR}/bin)
 export(EXPORT mycat FILE "${CMAKE_CURRENT_BINARY_DIR}/../mycatTargets.cmake")
